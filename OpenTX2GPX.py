@@ -15,7 +15,7 @@ import gpxpy.gpx
 import re
 import datetime
 
-flds = {'Date':-1,'Time':-1, 'GPS':-1, 'GSpd(kmh)':-1,'Alt(m)':-1,'Sats':-1}
+flds = {'Date':-1,'Time':-1, 'GPS':-1, 'GSpd(kts)':-1,'GAlt(m)':-1,'Sats':-1}
 patDate = re.compile("\d{4}-\d{2}-\d{2}")
 patTime = re.compile("\d{2}:\d{2}:\d{2}\.\d+")
 patGPS = re.compile("-?\d+\.\d+ -?\d+\.\d+")
@@ -186,11 +186,12 @@ def openTXLog(csvf):
     i = 0
     for hdr in header:
         for fl in flds.keys():
-            if (hdr == fl):
+            if (hdr == fl and flds[fl] == -1):
                 flds[fl] = i
         i += 1
     i = logNum = 0
     tdtDelta60 = datetime.timedelta(0,60)
+    maxSpeed = 0.0
 
     for row in openTXLog:
         logNum += 1
@@ -210,15 +211,15 @@ def openTXLog(csvf):
         if (result is None):
             valErrorMsg(logNum,"GPS",gps)
             continue
-        spd = row[flds['GSpd(kmh)']]
+        spd = row[flds['GSpd(kts)']]
         result = re.match(patGSpd,spd)
         if (result is None):
-            valErrorMsg(logNum,"GSpd(kmh)",spd)
+            valErrorMsg(logNum,"GSpd(kts)",spd)
             continue
-        alt = row[flds['Alt(m)']]
+        alt = row[flds['GAlt(m)']]
         result = re.match(patAlt,alt)
         if (result is None):
-            valErrorMsg(logNum,"Alt(m)",alt)
+            valErrorMsg(logNum,"GAlt(m)",alt)
             continue
         sats = row[flds['Sats']]
         result = re.match(patSats,sats)
@@ -250,6 +251,12 @@ def openTXLog(csvf):
 
         i += 1
         logSeqUpdate()
+
+        if float(spd) > maxSpeed:
+            maxSpeed = float(spd)
+
+    print("Max speed (kts): " + str(maxSpeed))
+    print("Max speed (km/h): " + str(maxSpeed * 1.852))
 
 def logSeqUpdate():
     cboxLogseq['values'] = []
@@ -301,10 +308,10 @@ def exportGPX(s, e):
     while(i < e):
         lon = gpsData[i][1]
         lat = gpsData[i][2]
-        alt = gpsData[i][4]
+        alt = gpsData[i][4].replace(",", ".")
         gtp = gpxpy.gpx.GPXTrackPoint(lat, lon, alt)
         gtp.time = gpsData[i][0]
-        speed = float(gpsData[i][3]) * 1000 / 3600
+        speed = float(gpsData[i][3].replace(",", ".")) * 1.852 * 1000 / 3600
         gtp.speed = speed
         gtp.satellites = gpsData[i][5]
         #gtp.extensions = {'speed':speed}

@@ -1,3 +1,5 @@
+> This is a fork of the original repo to read FrSky GPS ADV sensor data
+
 # OpenTX2GPX
 OpenTX2GPX converts OpenTX Log file contains GPS telemetry data to GPX file. 
 
